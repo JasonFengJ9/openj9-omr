@@ -158,7 +158,7 @@ MM_TLHAllocationSupport::refresh(MM_EnvironmentBase *env, MM_AllocateDescription
 	 */
 	uintptr_t sizeInBytesRequired = allocDescription->getContiguousBytes();
 	uintptr_t tlhMinimumSize = extensions->tlhMinimumSize;
-	uintptr_t tlhMaximumSize = extensions->tlhMaximumSize;
+	uintptr_t tlhMaximumSize = extensions->tlhActiveMaximumSize;
 	uintptr_t halfRefreshSize = getRefreshSize() >> 1;
 	uintptr_t abandonSize = (tlhMinimumSize > halfRefreshSize ? tlhMinimumSize : halfRefreshSize);
 	if (sizeInBytesRequired > abandonSize) {
@@ -196,6 +196,7 @@ MM_TLHAllocationSupport::refresh(MM_EnvironmentBase *env, MM_AllocateDescription
 	}
 
 	bool didRefresh = false;
+	uintptr_t sizeCurrentTLHAlloc = 0;
 	/* Try allocating a TLH */
 	if ((NULL != _abandonedList) && (sizeInBytesRequired <= tlhMinimumSize)) {
 		/* Try to get a cached TLH */
@@ -225,6 +226,11 @@ MM_TLHAllocationSupport::refresh(MM_EnvironmentBase *env, MM_AllocateDescription
 		/* Try allocating a fresh TLH */
 		MM_AllocationContext *ac = env->getAllocationContext();
 		MM_MemorySpace *memorySpace = _objectAllocationInterface->getOwningEnv()->getMemorySpace();
+
+		if (extensions->enableAllocationSampling && (extensions->allocationSamplingInterval >= tlhMinimumSize)) {
+			/* Get current TLH allocation size */
+			sizeCurrentTLHAlloc = (uintptr_t)getAlloc() - (uintptr_t)getBase();
+		}
 
 		if (NULL != ac) {
 			/* ensure that we are allowed to use the AI in this configuration in the Tarok case */
@@ -280,6 +286,17 @@ MM_TLHAllocationSupport::refresh(MM_EnvironmentBase *env, MM_AllocateDescription
 				setRefreshSize(getRefreshSize() + extensions->tlhIncrementSize);
 			}
 		}
+		
+		if (extensions->enableAllocationSampling && (sizeCurrentTLHAlloc > 0)) {
+			MM_AtomicOperations::add(&extensions->currentAllocationRemainder, sizeCurrentTLHAlloc);
+			uintptr_t allocationSamplingInterval = extensions->allocationSamplingInterval;
+			uintptr_t currentAllocationRemainder = extensions->currentAllocationRemainder;
+			uintptr_t currentAllocationTemp = currentAllocationRemainder + sizeInBytesRequired;
+			if (currentAllocationTemp >= allocationSamplingInterval) {
+				/* going to out-of-line to notify that the sampling interval has been reached. */
+				env->disableInlineTLHAllocate();
+			}
+		}
 	}
 
 	return didRefresh;
@@ -293,8 +310,9 @@ void *
 MM_TLHAllocationSupport::allocateFromTLH(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, bool shouldCollectOnFailure)
 {
 	void *memPtr = NULL;
+	MM_GCExtensionsBase *extensions = env->getExtensions();
 
-	Assert_MM_true(!env->getExtensions()->isSegregatedHeap());
+	Assert_MM_true(!extensions->isSegregatedHeap());
 	uintptr_t sizeInBytesRequired = allocDescription->getContiguousBytes();
 	/* If there's insufficient space, refresh the current TLH */
 	if (sizeInBytesRequired > getSize()) {
@@ -315,6 +333,11 @@ MM_TLHAllocationSupport::allocateFromTLH(MM_EnvironmentBase *env, MM_AllocateDes
 		allocDescription->setObjectFlags(getObjectFlags());
 		allocDescription->setMemorySubSpace((MM_MemorySubSpace *)_tlh->memorySubSpace);
 		allocDescription->completedFromTlh();
+		
+		if (extensions->enableAllocationSampling) {
+			OMR_VMThread* vmThread = env->getOmrVMThread();
+			TRIGGER_J9HOOK_MM_OMR_SAMPLED_OBJECT_ALLOCATE(extensions->omrHookInterface, vmThread, (J9Object *)memPtr, sizeInBytesRequired);
+		}
 	}
 
 	return memPtr;
