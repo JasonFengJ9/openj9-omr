@@ -158,7 +158,7 @@ MM_TLHAllocationSupport::refresh(MM_EnvironmentBase *env, MM_AllocateDescription
 	 */
 	uintptr_t sizeInBytesRequired = allocDescription->getContiguousBytes();
 	uintptr_t tlhMinimumSize = extensions->tlhMinimumSize;
-	uintptr_t tlhMaximumSize = extensions->tlhMaximumSize;
+	uintptr_t tlhMaximumSize = extensions->tlhActiveMaximumSize;
 	uintptr_t halfRefreshSize = getRefreshSize() >> 1;
 	uintptr_t abandonSize = (tlhMinimumSize > halfRefreshSize ? tlhMinimumSize : halfRefreshSize);
 	if (sizeInBytesRequired > abandonSize) {
@@ -170,7 +170,12 @@ MM_TLHAllocationSupport::refresh(MM_EnvironmentBase *env, MM_AllocateDescription
 	}
 
 	MM_AllocationStats *stats = _objectAllocationInterface->getAllocationStats();
-
+	uintptr_t sizeCurrentTLHAlloc = 0;
+	if (extensions->enableAllocationSampling && (extensions->allocationSamplingInterval >= tlhMinimumSize)) {
+		/* Get current TLH allocation size */
+		sizeCurrentTLHAlloc = (uintptr_t)getAlloc() - (uintptr_t)getBase();
+	}
+		
 	stats->_tlhDiscardedBytes += getSize();
 
 	/* Try to cache the current TLH */
@@ -257,6 +262,18 @@ MM_TLHAllocationSupport::refresh(MM_EnvironmentBase *env, MM_AllocateDescription
 			if (0 < getSize()) {
 				stats->_tlhRefreshCountFresh += 1;
 				stats->_tlhAllocatedFresh += getSize();
+			}
+			
+			if (extensions->enableAllocationSampling && (sizeCurrentTLHAlloc > 0)) {
+				MM_AtomicOperations::add(&extensions->currentAllocationRemainder, sizeCurrentTLHAlloc);
+				uintptr_t allocationSamplingInterval = extensions->allocationSamplingInterval;
+				uintptr_t currentAllocationRemainder = extensions->currentAllocationRemainder;
+				uintptr_t currentAllocationTemp = currentAllocationRemainder + sizeInBytesRequired;
+				if (currentAllocationTemp >= allocationSamplingInterval) {
+					/* going to out-of-line to notify that the sampling interval has been reached. */
+					printf("TLHAllocationSupport disableInlineTLHAllocate \n");
+					env->disableInlineTLHAllocate();
+				}
 			}
 		}
 	}

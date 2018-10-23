@@ -912,3 +912,8 @@ TraceEvent=Trc_MM_LOAResize_expandWithRange2 Overhead=1 Level=1 Group=loaresize 
 TraceEvent=Trc_MM_LOAResize_contractWithRange Overhead=1 Level=1 Group=loaresize Template="LOA resized on heap contraction: heapSize %zu,  LOA ratio is %.3f --> LOA base is now %p LOA size %zu"
 
 TraceEvent=Trc_MM_Scavenger_percolate_concurrentMarkExhausted Overhead=1 Level=1 Group=percolate Template="Percolating due to exhausted Concurrent Mark"
+
+TraceEntry=Trc_MM_AllocationSampling_setInterval_Entry Overhead=1 Level=1 Group=allocsamplinginterval Template="j9gc_set_allocation_sampling_interval: samplingInterval=%zu ext->allocationSamplingInterval=%zu"
+TraceExit=Trc_MM_AllocationSampling_setInterval_Exit Overhead=1 Level=1 Group=allocsamplinginterval Template="j9gc_set_allocation_sampling_interval"
+TraceEntry=Trc_MM_AllocationSampling_setFlag_Entry Overhead=1 Level=1 Group=allocsamplinginterval Template="j9gc_set_allocation_sampling: setFlag = %s"
+TraceExit=Trc_MM_AllocationSampling_setFlag_Exit Overhead=1 Level=1 Group=allocsamplinginterval Template="j9gc_set_allocation_sampling"
