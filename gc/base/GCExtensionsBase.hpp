@@ -609,6 +609,8 @@ public:
 	bool verboseNewFormat; /**< a flag, enabled by -XXgc:verboseNewFormat, to enable the new verbose GC format */
 	bool bufferedLogging; /**< Enabled by -Xgc:bufferedLogging.  Use buffered filestreams when writing logs (e.g. verbose:gc) to a file */
 
+	uintptr_t allocationSamplingInterval; /**< the heap sampling interval */
+	uintptr_t currentAllocationRemainder; /**< the remainder of current allocation size modulo the heap sampling interval */
 	uintptr_t lowAllocationThreshold; /**< the lower bound of the allocation threshold range */
 	uintptr_t highAllocationThreshold; /**< the upper bound of the allocation threshold range */
 	bool disableInlineCacheForAllocationThreshold; /**< true if inline allocates fall within the allocation threshold*/
@@ -1520,6 +1522,8 @@ public:
 		, verboseExtensions(false)
 		, verboseNewFormat(true)
 		, bufferedLogging(false)
+		, allocationSamplingInterval(512 * 1024) /* 512 KB */
+		, currentAllocationRemainder(0)
 		, lowAllocationThreshold(UDATA_MAX)
 		, highAllocationThreshold(UDATA_MAX)
 		, disableInlineCacheForAllocationThreshold(false)
