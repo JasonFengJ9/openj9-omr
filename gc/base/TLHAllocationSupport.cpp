@@ -292,10 +292,33 @@ MM_TLHAllocationSupport::refresh(MM_EnvironmentBase *env, MM_AllocateDescription
 void *
 MM_TLHAllocationSupport::allocateFromTLH(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, bool shouldCollectOnFailure)
 {
+	MM_GCExtensionsBase *extensions = env->getExtensions();
 	void *memPtr = NULL;
 
-	Assert_MM_true(!env->getExtensions()->isSegregatedHeap());
+	Assert_MM_true(!extensions->isSegregatedHeap());
 	uintptr_t sizeInBytesRequired = allocDescription->getContiguousBytes();
+	
+	if (extensions->disableInlineCacheForAllocationThreshold) {
+		/* going to out-of-line to notify that the allocation is within the allocation threshold. */
+		uintptr_t lowThreshold = extensions->lowAllocationThreshold;
+		uintptr_t highThreshold = extensions->highAllocationThreshold;
+		if ( (sizeInBytesRequired >= lowThreshold) && (sizeInBytesRequired <= highThreshold) ) {
+			env->disableInlineTLHAllocate();
+			return memPtr;
+		}
+	}
+	
+	if (extensions->enableAllocationSampling) {
+		uintptr_t allocationSamplingInterval = extensions->allocationSamplingInterval;
+		uintptr_t currentAllocationRemainder = extensions->currentAllocationRemainder;
+		uintptr_t currentAllocationTemp = currentAllocationRemainder + sizeInBytesRequired;
+		if (currentAllocationTemp >= allocationSamplingInterval) {
+			/* going to out-of-line to notify that the sampling interval has been reached. */
+			env->disableInlineTLHAllocate();
+			return memPtr;
+		}
+	}
+		
 	/* If there's insufficient space, refresh the current TLH */
 	if (sizeInBytesRequired > getSize()) {
 		refresh(env, allocDescription, shouldCollectOnFailure);
