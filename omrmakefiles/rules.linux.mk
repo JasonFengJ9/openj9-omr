@@ -389,7 +389,9 @@ ifeq ($(OMR_OPTIMIZE),1)
 else
   OPTIMIZATION_FLAGS+=-O0
 endif
+GLOBAL_CFLAGS+=-fno-omit-frame-pointer
 GLOBAL_CFLAGS+=$(OPTIMIZATION_FLAGS)
+GLOBAL_CXXFLAGS+=-fno-omit-frame-pointer
 GLOBAL_CXXFLAGS+=$(OPTIMIZATION_FLAGS)
 
 # Override the default recipe if we are using USE_GNU_DEBUG, so that we strip out the
