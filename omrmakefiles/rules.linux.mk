@@ -396,7 +396,7 @@ ifeq ($(OMR_OPTIMIZE),1)
         endif
       else
         ifeq (s390,$(OMR_HOST_ARCH))
-          OPTIMIZATION_FLAGS+=-O -mtune=z10 -march=z9-109 -mzarch
+          OPTIMIZATION_FLAGS+=-O0 -mtune=z10 -march=z9-109 -mzarch
         else ifeq (riscv,$(OMR_HOST_ARCH))
           OPTIMIZATION_FLAGS+=-O3 -fno-strict-aliasing
         else
