@@ -114,6 +114,7 @@ MM_GCExtensionsBase::initialize(MM_EnvironmentBase* env)
 	 * It can also be used by downstream projects to compute project specific GC parameters.
 	 */
 	usablePhysicalMemory = omrsysinfo_get_addressable_physical_memory();
+	printf("OpenJ9LOG-GCExtensionsBase.cpp: MM_GCExtensionsBase::initialize usablePhysicalMemory (%llu) \n", usablePhysicalMemory);
 
 	computeDefaultMaxHeap(env);
 
@@ -306,6 +307,8 @@ MM_GCExtensionsBase::computeDefaultMaxHeap(MM_EnvironmentBase* env)
 	/* we are going to try to request a slice of half the usable memory */
 	uint64_t memoryToRequest = (usablePhysicalMemory / 2);
 
+	printf("OpenJ9LOG-GCExtensionsBase.cpp: MM_GCExtensionsBase::computeDefaultMaxHeap usablePhysicalMemory (%llu) memoryToRequest (%llu) \n", usablePhysicalMemory, memoryToRequest);
+
 #define J9_PHYSICAL_MEMORY_MAX (uint64_t)(512 * 1024 * 1024)
 #define J9_PHYSICAL_MEMORY_DEFAULT (16 * 1024 * 1024)
 
@@ -316,4 +319,6 @@ MM_GCExtensionsBase::computeDefaultMaxHeap(MM_EnvironmentBase* env)
 
 	/* Initialize Xmx, Xmdx */
 	memoryMax = MM_Math::roundToFloor(heapAlignment, (uintptr_t)memoryToRequest);
+
+	printf("OpenJ9LOG-GCExtensionsBase.cpp: MM_GCExtensionsBase::computeDefaultMaxHeap memoryMax (%lu) memoryToRequest (%llu) \n", memoryMax, memoryToRequest);
 }

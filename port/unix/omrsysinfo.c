@@ -3147,15 +3147,19 @@ omrsysinfo_get_addressable_physical_memory(struct OMRPortLibrary *portLibrary)
 	uint64_t memoryLimit = 0;
 	uint64_t usableMemory = portLibrary->sysinfo_get_physical_memory(portLibrary);
 
+	printf("OpenJ9LOG-omrsysinfo.c: omrsysinfo_get_addressable_physical_memory usableMemory (%llu) \n", usableMemory);
 #if !defined(OMRZTPF)
 	if (OMRPORT_LIMIT_LIMITED == portLibrary->sysinfo_get_limit(portLibrary, OMRPORT_RESOURCE_ADDRESS_SPACE, &memoryLimit)) {
 		/* there is a limit on the memory we can use so take the minimum of this usable amount and the physical memory */
+		printf("OpenJ9LOG-omrsysinfo.c: omrsysinfo_get_addressable_physical_memory memoryLimit (%llu) \n", memoryLimit);
 		usableMemory = OMR_MIN(memoryLimit, usableMemory);
 	}
+	printf("OpenJ9LOG-omrsysinfo.c: omrsysinfo_get_addressable_physical_memory usableMemory (%llu) 2 \n", usableMemory);
 #else /* !defined(OMRZTPF) */
 	usableMemory *= ZTPF_MEMORY_RESERVE_RATIO;
 #endif /* !defined(OMRZTPF) */
 
+	printf("OpenJ9LOG-omrsysinfo.c: omrsysinfo_get_addressable_physical_memory usableMemory (%llu) 3 \n", usableMemory);
 	return usableMemory;
 }
 
@@ -3164,24 +3168,29 @@ omrsysinfo_get_physical_memory(struct OMRPortLibrary *portLibrary)
 {
 	uint64_t result = 0;
 
+	printf("OpenJ9LOG-omrsysinfo.c: omrsysinfo_get_physical_memory starts \n");
 #if defined(LINUX)
 	if (portLibrary->sysinfo_cgroup_are_subsystems_enabled(portLibrary, OMR_CGROUP_SUBSYSTEM_MEMORY)) {
 		int32_t rc = portLibrary->sysinfo_cgroup_get_memlimit(portLibrary, &result);
 
 		if (0 == rc) {
+			printf("OpenJ9LOG-omrsysinfo.c: omrsysinfo_get_physical_memory result (%llu) \n", result);
 			return result;
 		}
 	}
+	printf("OpenJ9LOG-omrsysinfo.c: omrsysinfo_get_physical_memory result 2 (%llu) \n", result);
 #endif /* defined(LINUX) */
 
 #if defined(RS6000)
 	/* physmem is not a field in the system_configuration struct */
 	/* on systems with 43K headers. However, this is not an issue as we only support AIX 5.2 and above only */
 	result = (uint64_t) _system_configuration.physmem;
+	printf("OpenJ9LOG-omrsysinfo.c: omrsysinfo_get_physical_memory result 3 (%llu) \n", result);
 #elif defined(J9ZOS390)
 	J9CVT * __ptr32 cvtp = ((J9PSA * __ptr32)0)->flccvt;
 	J9RCE * __ptr32 rcep = cvtp->cvtrcep;
 	result = ((U_64)rcep->rcepool * J9BYTES_PER_PAGE);
+	printf("OpenJ9LOG-omrsysinfo.c: omrsysinfo_get_physical_memory result4 (%llu) \n", result);
 #elif defined(OSX) || defined(OMR_OS_BSD)
 	{
 		int name[2] = {
@@ -3198,11 +3207,15 @@ omrsysinfo_get_physical_memory(struct OMRPortLibrary *portLibrary)
 			result = 0;
 		}
 	}
+	printf("OpenJ9LOG-omrsysinfo.c: omrsysinfo_get_physical_memory result5 (%llu) \n", result);
 #elif defined(OMRZTPF)
 	result = getPhysicalMemory();
+	printf("OpenJ9LOG-omrsysinfo.c: omrsysinfo_get_physical_memory result6 (%llu) \n", result);
 #else /* defined(RS6000) */
 	result = getPhysicalMemory(portLibrary);
+	printf("OpenJ9LOG-omrsysinfo.c: omrsysinfo_get_physical_memory result7 (%llu) \n", result);
 #endif /* defined(RS6000) */
+	printf("OpenJ9LOG-omrsysinfo.c: omrsysinfo_get_physical_memory result8 (%llu) \n", result);
 	return result;
 }
 

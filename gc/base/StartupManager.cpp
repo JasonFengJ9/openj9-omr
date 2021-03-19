@@ -225,6 +225,7 @@ MM_StartupManager::loadGcOptions(MM_GCExtensionsBase *extensions)
 	extensions->oldSpaceSize = defaultMinHeapSize;
 	extensions->maxOldSpaceSize = defaultMaxHeapSize;
 	extensions->memoryMax = defaultMaxHeapSize;
+	printf("OpenJ9LOG-StartupManager.cpp: MM_StartupManager::loadGcOptions extensions->memoryMax (%lu) defaultMaxHeapSize (%lu) \n", extensions->memoryMax, defaultMaxHeapSize);
 	extensions->maxSizeDefaultMemorySpace = defaultMaxHeapSize;
 
 	/* Now override defaults with specified settings, if any */
@@ -254,6 +255,7 @@ MM_StartupManager::handleOption(MM_GCExtensionsBase *extensions, char *option)
 		} else {
 			extensions->maxOldSpaceSize = value;
 			extensions->memoryMax = value;
+			printf("OpenJ9LOG-StartupManager.cpp: MM_StartupManager::handleOption extensions->memoryMax (%lu) value (%lu) \n", extensions->memoryMax, value);
 			extensions->maxSizeDefaultMemorySpace = value;
 		}
 	}
