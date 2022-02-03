@@ -253,6 +253,7 @@ omrstr_convert(struct OMRPortLibrary *portLibrary, int32_t fromCode, int32_t toC
 {
 	int32_t result = OMRPORT_ERROR_STRING_UNSUPPORTED_ENCODING;
 
+	printf("OMRLog omrstr_convert fromCode (%d) toCode (%d) \n", fromCode, toCode);
 	switch (fromCode) {
 	case J9STR_CODE_PLATFORM_RAW: {
 		switch (toCode) {
@@ -2264,6 +2265,7 @@ convertPlatformToMutf8(struct OMRPortLibrary *portLibrary, uint32_t codePage, co
 	}
 #endif
 	/* do the conversion. outBufferSize==0 indicates that only the buffer size is required. */
+	printf("OMRLog convertPlatformToMutf8 codePage (%d) \n", codePage);
 	while ((platformRemaining > 0) && ((0 == outBufferSize) || (mutf8Limit > 0))) {
 		int32_t wideBufferPartialSize = convertPlatformToWide(portLibrary, encodingState, codePage, &platformCursor, &platformRemaining, wideBuffer, wideBufferSize);
 		const uint8_t *tempWideBuffer = wideBuffer; /* need a mutable copy */
