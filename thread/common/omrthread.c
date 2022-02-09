@@ -4526,11 +4526,20 @@ monitor_wait(omrthread_monitor_t monitor, int64_t millis, intptr_t nanos, uintpt
 
 #if defined(OMR_THR_THREE_TIER_LOCKING)
 	if (self->library->flags & J9THREAD_LIB_FLAG_FAST_NOTIFY) {
+		printf("OpenJ9Log OMR monitor_wait OMR_THR_THREE_TIER_LOCKING J9THREAD_LIB_FLAG_FAST_NOTIFY - NOT this path \n");
+		fflush(stdout);
+		
 		return monitor_wait_three_tier(self, monitor, millis, nanos, interruptible);
 	} else {
+//		printf("OpenJ9Log OMR monitor_wait OMR_THR_THREE_TIER_LOCKING - this is the PATH \n");
+//		fflush(stdout);
+	
 		return monitor_wait_original(self, monitor, millis, nanos, interruptible);
 	}
 #else
+	printf("OpenJ9Log OMR monitor_wait NO OMR_THR_THREE_TIER_LOCKING - NOT this path \n");
+	fflush(stdout);
+	
 	return monitor_wait_original(self, monitor, millis, nanos, interruptible);
 #endif
 }
@@ -4588,16 +4597,22 @@ monitor_wait_original(omrthread_t self, omrthread_monitor_t monitor,
 	if (intrFlags & J9THREAD_FLAG_INTERRUPTED) {
 		self->flags &= ~J9THREAD_FLAG_INTERRUPTED;
 		THREAD_UNLOCK(self);
+		printf("OpenJ9Log OMR monitor_wait_original return J9THREAD_INTERRUPTED \n");
+		fflush(stdout);
 		return J9THREAD_INTERRUPTED;
 	}
 	if (intrFlags & J9THREAD_FLAG_PRIORITY_INTERRUPTED) {
 		self->flags &= ~J9THREAD_FLAG_PRIORITY_INTERRUPTED;
 		THREAD_UNLOCK(self);
+		printf("OpenJ9Log OMR monitor_wait_original return J9THREAD_PRIORITY_INTERRUPTED \n");
+		fflush(stdout);
 		return J9THREAD_PRIORITY_INTERRUPTED;
 	}
 	if (intrFlags & J9THREAD_FLAG_ABORTED) {
 		/* don't clear the flag */
 		THREAD_UNLOCK(self);
+		printf("OpenJ9Log OMR monitor_wait_original return J9THREAD_PRIORITY_INTERRUPTED \n");
+		fflush(stdout);
 		return J9THREAD_PRIORITY_INTERRUPTED;
 	}
 
@@ -4681,21 +4696,33 @@ monitor_wait_original(omrthread_t self, omrthread_monitor_t monitor,
 		/*
 		 * WAIT UNTIL NOTIFIED, NO TIMEOUT
 		 */
+		uint64_t timestamp = omrthread_get_hires_clock() / 1000;
 
+		printf("OpenJ9Log OMR ENTRY (%zu) monitor_wait_original before OMROSCOND_WAIT monitor (%p) mutex (%p) \n", timestamp, monitor, &(monitor->mutex));
+		fflush(stdout);
+		
 		ASSERT_MONITOR_UNOWNED_IF_NOT_3TIER(monitor);
 		OMROSCOND_WAIT(MONITOR_WAIT_CONDITION(self,monitor), monitor->mutex);
 			ASSERT_MONITOR_UNOWNED_IF_NOT_3TIER(monitor);
 
+			printf("OpenJ9Log OMR (%zu) monitor_wait_original after OMROSCOND_WAIT monitor (%p) mutex (%p) \n", timestamp, monitor, &(monitor->mutex));
+			fflush(stdout);
+			
 			THREAD_LOCK(self, CALLER_MONITOR_WAIT2);
 			intrFlags = self->flags & intrMask;
 			interrupted = J9THR_WAIT_INTERRUPTED(intrFlags);
 			priorityinterrupted = J9THR_WAIT_PRI_INTERRUPTED(intrFlags);
 			notified = check_notified(self, monitor);
 			if (interrupted || priorityinterrupted || notified) {
+				printf("OpenJ9Log OMR (%zu) monitor_wait_original before break interrupted (%zx) priorityinterrupted (%zx) notified (%zx) \n", timestamp, interrupted, priorityinterrupted, notified);
+				fflush(stdout);
 				break;
 			}
 			THREAD_UNLOCK(self);
 		OMROSCOND_WAIT_LOOP();
+		
+		printf("OpenJ9Log OMR EXIT (%zu) monitor_wait_original after OMROSCOND_WAIT_LOOP monitor (%p) mutex (%p) \n", timestamp, monitor, &(monitor->mutex));
+		fflush(stdout);
 	}
 
 	/* DONE WAITING AT THIS POINT */
