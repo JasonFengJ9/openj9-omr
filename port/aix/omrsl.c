@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 1991, 2016 IBM Corp. and others
+ * Copyright (c) 1991, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -206,6 +206,7 @@ uintptr_t omrsl_close_shared_library(struct OMRPortLibrary *portLibrary, uintptr
 	result = (uintptr_t) Xj9dlclose((void *)descriptor);
 #else
 	result = (uintptr_t) dlclose((void *)descriptor);
+	terminateAndUnload(descriptor);
 #endif
 
 	Trc_PRT_sl_close_shared_library_Exit(result);
