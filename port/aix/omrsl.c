@@ -206,7 +206,6 @@ uintptr_t omrsl_close_shared_library(struct OMRPortLibrary *portLibrary, uintptr
 	result = (uintptr_t) Xj9dlclose((void *)descriptor);
 #else
 	result = (uintptr_t) dlclose((void *)descriptor);
-	terminateAndUnload(descriptor);
 #endif
 
 	Trc_PRT_sl_close_shared_library_Exit(result);
@@ -221,12 +220,13 @@ omrsl_open_shared_library(struct OMRPortLibrary *portLibrary, char *name, uintpt
 	char *fileName = strrchr(name, '/');
 	char mangledName[EsMaxPath + 1];
 	char errBuf[512];
-	uintptr_t result;
+	uintptr_t result = 0;
 	int lazyOrNow = OMR_ARE_ALL_BITS_SET(flags, OMRPORT_SLOPEN_LAZY) ? RTLD_LAZY : RTLD_NOW;
 	BOOLEAN decorate = OMR_ARE_ALL_BITS_SET(flags, OMRPORT_SLOPEN_DECORATE);
 	uintptr_t lastErrno = 0;
 	BOOLEAN openExec = OMR_ARE_ALL_BITS_SET(flags, OMRPORT_SLOPEN_OPEN_EXECUTABLE);
 	uintptr_t pathLength = 0;
+	int (*funcPointer)() = NULL;
 
 	Trc_PRT_sl_open_shared_library_Entry(name, flags);
 
@@ -258,8 +258,12 @@ omrsl_open_shared_library(struct OMRPortLibrary *portLibrary, char *name, uintpt
 	 * calling loadAndInit(libname, 0 -> no flags, NULL -> use the currently defined LIBPATH) allows
 	 * us to load the library with the current libpath instead of the one at process creation
 	 * time. We can then call dlopen() as per normal and the just loaded library will be found.
+	 *
+	 * terminateAndUnload() is required to decrement the reference to the library,
+	 * and dlclose() can unload the library loaded via dlopen().
+	 * https://github.com/eclipse-openj9/openj9/issues/14441
 	 */
-	loadAndInit(openName, L_RTLD_LOCAL, NULL);
+	funcPointer = loadAndInit(openName, L_RTLD_LOCAL, NULL);
 
 	/* dlopen(2) called with NULL filename opens a handle to current executable. */
 	handle = dlopen(openExec ? NULL : openName, lazyOrNow);
@@ -274,6 +278,8 @@ omrsl_open_shared_library(struct OMRPortLibrary *portLibrary, char *name, uintpt
 			result = portLibrary->error_set_last_error_with_message(portLibrary, OMRPORT_SL_NOT_FOUND, errBuf);
 		}
 	}
+	/* Allow error_set_last_error_with_message() above to retrieve correct errno. */
+	terminateAndUnload(funcPointer);
 
 	if ((NULL == handle) && !openExec) {
 		char portLibDir[1024];
@@ -284,7 +290,7 @@ omrsl_open_shared_library(struct OMRPortLibrary *portLibrary, char *name, uintpt
 		if ((suffixLength < sizeof(portLibDir)) && (0 != getDirectoryOfLibrary(portLibrary, portLibDir, sizeof(portLibDir) - suffixLength))) {
 			strcat(portLibDir, "/");
 			strcat(portLibDir, openName);
-			loadAndInit(portLibDir, L_RTLD_LOCAL, NULL);
+			funcPointer = loadAndInit(portLibDir, L_RTLD_LOCAL, NULL);
 			handle = dlopen(portLibDir, lazyOrNow);
 			if (NULL == handle) {
 				lastErrno = errno;
@@ -294,6 +300,7 @@ omrsl_open_shared_library(struct OMRPortLibrary *portLibrary, char *name, uintpt
 					result = portLibrary->error_set_last_error_with_message(portLibrary, OMRPORT_SL_INVALID, errBuf);
 				}
 			}
+			terminateAndUnload(funcPointer);
 		}
 
 		if (NULL == handle) {
@@ -320,7 +327,7 @@ omrsl_open_shared_library(struct OMRPortLibrary *portLibrary, char *name, uintpt
 					}
 
 					Trc_PRT_sl_open_shared_library_Event1(mangledName);
-					loadAndInit(mangledName, L_RTLD_LOCAL, NULL);
+					funcPointer = loadAndInit(mangledName, L_RTLD_LOCAL, NULL);
 					handle = dlopen(mangledName, lazyOrNow);
 					if (NULL == handle) {
 						char *actualFileName = NULL;
@@ -347,6 +354,7 @@ omrsl_open_shared_library(struct OMRPortLibrary *portLibrary, char *name, uintpt
 							}
 							if (pathLength >= EsMaxPath) {
 								result = OMRPORT_SL_UNSUPPORTED;
+								terminateAndUnload(funcPointer);
 								goto exit;
 							}
 
@@ -380,7 +388,7 @@ omrsl_open_shared_library(struct OMRPortLibrary *portLibrary, char *name, uintpt
 									 * This translates into a file of name 'archive', to which dlopen will look to load 'member' since RTLD_MEMBER is specified.
 									 */
 
-									loadAndInit(name, L_RTLD_LOCAL, NULL);
+									funcPointer = loadAndInit(name, L_RTLD_LOCAL, NULL);
 									handle = dlopen(name, lazyOrNow | RTLD_MEMBER);
 									if (NULL == handle) {
 										lastErrno = errno;
@@ -392,6 +400,7 @@ omrsl_open_shared_library(struct OMRPortLibrary *portLibrary, char *name, uintpt
 																		(uintptr_t)actualFileName - 1 - (uintptr_t)fileName,
 																		fileName + 1);
 										if (pathLength >= EsMaxPath) {
+											terminateAndUnload(funcPointer);
 											result = OMRPORT_SL_UNSUPPORTED;
 											goto exit;
 										}
@@ -400,12 +409,14 @@ omrsl_open_shared_library(struct OMRPortLibrary *portLibrary, char *name, uintpt
 											result = portLibrary->error_set_last_error_with_message(portLibrary, OMRPORT_SL_INVALID, errBuf);
 										}
 									}
+									terminateAndUnload(funcPointer);
 								}
 #if defined(J9OS_I5)
 							}
 						}
 #endif
 					}
+					terminateAndUnload(funcPointer);
 				}
 #if defined(J9OS_I5)
 			}
