@@ -3811,8 +3811,8 @@ omrsysinfo_get_username(struct OMRPortLibrary *portLibrary, char *buffer, uintpt
 	}
 #endif
 	if (NULL == remoteCopy) {
-		uid_t uid = getuid();
-		pwent = getpwuid(uid);
+//		uid_t uid = getuid();
+//		pwent = getpwuid(uid);
 
 		if (NULL != pwent) {
 			remoteCopy = pwent->pw_name;
@@ -3860,7 +3860,7 @@ omrsysinfo_get_groupname(struct OMRPortLibrary *portLibrary, char *buffer, uintp
 #endif
 
 	gid_t gid = getgid();
-	struct group *grent = getgrgid(gid);
+	struct group *grent = NULL; // getgrgid(gid);
 
 	if (NULL != grent) {
 		remoteCopy = grent->gr_name;

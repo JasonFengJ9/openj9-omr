@@ -1271,7 +1271,7 @@ omrshmem_getDir(struct OMRPortLibrary* portLibrary, const char* ctrlDirName, uin
 				Trc_PRT_omrshmem_getDir_tryHomeDirFailed_getEnvHomeFailed();
 			}
 			if (NULL == homeDir) {
-				struct passwd *pwent = getpwuid(getuid());
+				struct passwd *pwent = NULL; // getpwuid(getuid());
 				if (NULL != pwent) {
 					uintptr_t dirLen = strlen((const char*)pwent->pw_dir);
 					if (0 < dirLen
