@@ -1272,6 +1272,7 @@ omrshmem_getDir(struct OMRPortLibrary* portLibrary, const char* ctrlDirName, uin
 			}
 			if (NULL == homeDir) {
 				struct passwd *pwent = getpwuid(getuid());
+				printf("omrshmem.c omrshmem_getDir getpwuid(getuid()) invoked!! \n ");
 				if (NULL != pwent) {
 					uintptr_t dirLen = strlen((const char*)pwent->pw_dir);
 					if (0 < dirLen
@@ -1886,6 +1887,7 @@ omrshmem_createSharedMemory(OMRPortLibrary *portLibrary, intptr_t fd, BOOLEAN is
 		controlinfo->common.shmid = shmid;
 		controlinfo->size = size;
 		controlinfo->uid = geteuid();
+		printf("omrshmem.c omrshmem_createSharedMemory geteuid()/getegid() invoked!! \n");
 		controlinfo->gid = getegid();
 
 		if (-1 == omrfile_seek(portLibrary, fd, 0, EsSeekSet)) {
