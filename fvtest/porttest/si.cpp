@@ -262,7 +262,6 @@ TEST(PortSysinfoTest, sysinfo_test1)
 
 	reportTestEntry(OMRPORTLIB, testName);
 
-	printf("si.cpp TEST omrsysinfo_get_username invoked!! \n");
 	rc = omrsysinfo_get_username(username, J9SYSINFO_TEST1_USERNAME_LENGTH);
 	if (rc == -1) {
 		portTestEnv->log(LEVEL_ERROR, "omrsysinfo_get_username returns -1.\n");
@@ -276,7 +275,6 @@ TEST(PortSysinfoTest, sysinfo_test1)
 	}
 
 	length = strlen(username);
-	printf("si.cpp TEST 2 omrsysinfo_get_username invoked!! \n");
 	rc = omrsysinfo_get_username(username, length - 1);
 
 	if (length > rc) {

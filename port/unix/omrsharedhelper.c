@@ -229,7 +229,6 @@ omr_ControlFileOpenWithWriteLock(struct OMRPortLibrary* portLibrary, intptr_t * 
 
 			*fd = omrfile_open(portLibrary, filename, exclcreateflags, mode);
 			if (*fd != -1) {		
-				printf("omrsharedhelper.c omr_ControlFileOpenWithWriteLock getegid() invoked!! \n");
 				if (omrfile_chown(portLibrary, filename, OMRPORT_FILE_IGNORE_ID, getegid()) == -1) {
 					/*If this fails it is not fatal ... but we may have problems later ...*/
 					Trc_PRT_shared_omr_ControlFileFDWithWriteLock_Message("Info: could not chown file.");
@@ -377,7 +376,6 @@ omr_ControlFileCloseAndUnLock(struct OMRPortLibrary* portLibrary, intptr_t fd)
 static BOOLEAN
 omr_IsFileReadWrite(struct J9FileStat * statbuf)
 {
-	printf("omrsharedhelper.c omr_IsFileReadWrite geteuid() invoked!!! \n");
 	if (statbuf->ownerUid == geteuid()) {
 		if (statbuf->perm.isUserWriteable == 1 && statbuf->perm.isUserReadable == 1) {
 			return TRUE;

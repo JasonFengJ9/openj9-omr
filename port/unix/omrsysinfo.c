@@ -2438,7 +2438,6 @@ omrsysinfo_get_ppid(struct OMRPortLibrary *portLibrary)
 uintptr_t
 omrsysinfo_get_euid(struct OMRPortLibrary *portLibrary)
 {
-	printf("omrsysinfo.c omrsysinfo_get_euid geteuid() invoked!! \n");
 	uintptr_t uid = geteuid();
 	Trc_PRT_sysinfo_get_egid(uid);
 	return uid;
@@ -2447,7 +2446,6 @@ omrsysinfo_get_euid(struct OMRPortLibrary *portLibrary)
 uintptr_t
 omrsysinfo_get_egid(struct OMRPortLibrary *portLibrary)
 {
-	printf("omrsysinfo.c omrsysinfo_get_egid getegid() invoked!! \n");
 	uintptr_t gid = getegid();
 	Trc_PRT_sysinfo_get_egid(gid);
 	return gid;
@@ -3941,6 +3939,7 @@ omrsysinfo_startup(struct OMRPortLibrary *portLibrary)
 	BOOLEAN runningInContainer = FALSE;
 #endif /* defined(LINUX) && !defined(OMRZTPF) */
 
+	PPG_instantOnFlags = 0;
 	PPG_sysinfoControlFlags = 0;
 	/* Obtain and cache executable name; if this fails, executable name remains NULL, but
 	 * shouldn't cause failure to startup port library.  Failure will be noticed only
@@ -4007,7 +4006,6 @@ omrsysinfo_get_username(struct OMRPortLibrary *portLibrary, char *buffer, uintpt
 	}
 #endif
 	if (NULL == remoteCopy) {
-		printf("omrsysinfo.c omrsysinfo_get_username getuid() invoked!! \n");
 		uid_t uid = getuid();
 		pwent = getpwuid(uid);
 
@@ -4056,7 +4054,6 @@ omrsysinfo_get_groupname(struct OMRPortLibrary *portLibrary, char *buffer, uintp
 	char **member = NULL;
 #endif
 
-	printf("omrsysinfo.c omrsysinfo_get_groupname getgid() invoked!! \n");
 	gid_t gid = getgid();
 	struct group *grent = getgrgid(gid);
 

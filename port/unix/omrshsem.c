@@ -375,7 +375,6 @@ omrshsem_destroy (struct OMRPortLibrary *portLibrary, struct omrshsem_handle **h
 			 ours to delete. However, given the dir permissions, we can still unlink it. Therefore, try an operation for which we need
 			 to own the file. If it succeeds, that means we own it and can go ahead and unlink it. */
 			Trc_PRT_shsem_omrshsem_destroy_Debug2((*handle)->semid, myerrno);
-			printf("omrshsem.c omrshsem_destroy getegid() invoked!! \n");
 			rc = omrfile_chown(portLibrary,(*handle)->baseFile, OMRPORT_FILE_IGNORE_ID, getegid()); /* Completely benign - done anyway when the file is created */
 		} else {
 			Trc_PRT_shsem_omrshsem_destroy_Debug2((*handle)->semid, myerrno);
@@ -446,7 +445,6 @@ omrshsem_ensureBaseFile(struct OMRPortLibrary *portLibrary, char *filename)
 {
 	intptr_t fd;
 	intptr_t rc = 0;
-	printf("omrshsem.c omrshsem_ensureBaseFile getegid() invoked!! \n");
 	gid_t gid = getegid();
 	int32_t flags = EsOpenCreate | EsOpenWrite | EsOpenCreateNew;
 
