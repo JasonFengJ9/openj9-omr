@@ -276,7 +276,8 @@ J9HookDispatch(struct J9HookInterface **hookInterface, uintptr_t taggedEventNum,
 }
 
 
-
+static size_t eventNum24Counter = 0;
+static size_t eventNum26Counter = 0;
 /*
  * Mark this event as disabled. Any future attempts to add a hook for this event
  * will result in an error.
@@ -291,10 +292,18 @@ J9HookDisable(struct J9HookInterface **hookInterface, uintptr_t taggedEventNum)
 	J9CommonHookInterface *commonInterface = (J9CommonHookInterface *)hookInterface;
 	uintptr_t eventNum = taggedEventNum & J9HOOK_EVENT_NUM_MASK;
 
+	if (24 == eventNum) {
+		eventNum24Counter += 1;
+	} else if (26 == eventNum) {
+		eventNum26Counter += 1;
+	}
+//	printf("OMR J9HookDisable() was J9HOOK_FLAG_DISABLED w/ eventNum (%zu) eventNum24Counter (%ld) eventNum24Counter (%ld) \n", eventNum, eventNum24Counter, eventNum26Counter);
 	/* try to answer without using the lock, first */
 	if (HOOK_FLAGS(commonInterface, eventNum) & J9HOOK_FLAG_RESERVED) {
+		printf("OMR J9HookDisable() J9HOOK_FLAG_RESERVED w/ eventNum %zu \n", eventNum);
 		return -1;
 	} else if (HOOK_FLAGS(commonInterface, eventNum) & J9HOOK_FLAG_DISABLED) {
+//		printf("OMR J9HookDisable() J9HOOK_FLAG_DISABLED w/ eventNum %zu \n", eventNum);
 		return 0;
 	} else {
 		intptr_t rc = 0;
@@ -302,8 +311,10 @@ J9HookDisable(struct J9HookInterface **hookInterface, uintptr_t taggedEventNum)
 		omrthread_monitor_enter(commonInterface->lock);
 
 		if (HOOK_FLAGS(commonInterface, eventNum) & (J9HOOK_FLAG_RESERVED | J9HOOK_FLAG_HOOKED)) {
+			printf("OMR J9HookDisable() J9HOOK_FLAG_RESERVED|J9HOOK_FLAG_HOOKED w/ eventNum %zu \n", eventNum);
 			rc = -1;
 		} else {
+			printf("OMR J9HookDisable() now J9HOOK_FLAG_DISABLED w/ eventNum %zu \n", eventNum);
 			HOOK_FLAGS(commonInterface, eventNum) |= J9HOOK_FLAG_DISABLED;
 		}
 
